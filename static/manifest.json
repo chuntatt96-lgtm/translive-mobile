@@ -1,0 +1,14 @@
+{
+  "name": "TransLive",
+  "short_name": "TransLive",
+  "description": "Real-time audio translation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0D12",
+  "theme_color": "#0D0D12",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/static/icon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
