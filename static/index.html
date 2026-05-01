@@ -269,6 +269,7 @@ function connectWS(source, target) {
   };
 
   ws.onclose = () => statusDot.classList.remove("active");
+  ws.onerror = (e) => { showToast("Connection error — check server"); statusDot.classList.remove("active"); };
 }
 
 // Audio recording
@@ -277,6 +278,16 @@ async function startRecording() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: {
       sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true
     }});
+
+    // Connect WebSocket first
+    connectWS(srcSel.value, tgtSel.value);
+
+    // Wait for WS to open
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("Connection timeout")), 5000);
+      ws.addEventListener("open", () => { clearTimeout(timeout); resolve(); }, { once: true });
+      ws.addEventListener("error", () => { clearTimeout(timeout); reject(new Error("WebSocket error")); }, { once: true });
+    });
 
     // Level meter
     audioCtx  = new AudioContext({ sampleRate: 16000 });
@@ -290,12 +301,6 @@ async function startRecording() {
       const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
       levelBar.style.width = Math.min(100, avg * 2) + "%";
     }, 80);
-
-    // Connect WS
-    connectWS(srcSel.value, tgtSel.value);
-
-    // Wait for WS open
-    await new Promise(r => { ws.onopen = () => { ws.send(JSON.stringify({ source: srcSel.value, target: tgtSel.value })); r(); statusDot.classList.add("active"); }; });
 
     // Stream audio as PCM via ScriptProcessor
     const processor = audioCtx.createScriptProcessor(4096, 1, 1);
@@ -314,7 +319,8 @@ async function startRecording() {
     recordHint.textContent = "Listening…";
 
   } catch (err) {
-    showToast("Microphone access denied");
+    showToast("Error: " + err.message);
+    stopRecording();
   }
 }
 
