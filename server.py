@@ -56,6 +56,9 @@ async def transcribe_ws(client_ws: WebSocket):
     target_lang = client_ws.query_params.get("target", "en")
     print(f"Session: {source_lang} → {target_lang}")
 
+    # Send immediate ping to keep Railway proxy alive
+    await client_ws.send_json({"status": "connecting"})
+
     headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
 
     try:
