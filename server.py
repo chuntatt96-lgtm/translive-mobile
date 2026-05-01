@@ -39,7 +39,7 @@ async def index():
 
 @app.get("/health")
 async def health():
-    return JSONResponse({"status": "ok", "api_key_set": bool(DEEPGRAM_API_KEY)})
+    return JSONResponse({"status": "ok", "api_key_set": bool(DEEPGRAM_API_KEY), "api_key_prefix": DEEPGRAM_API_KEY[:8] + "..." if DEEPGRAM_API_KEY else "none"})
 
 
 @app.websocket("/ws/transcribe")
