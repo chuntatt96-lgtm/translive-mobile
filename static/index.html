@@ -185,6 +185,7 @@
       <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1 17.93V21H9v2h6v-2h-2v-2.07A8 8 0 0 0 20 11h-2a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.93z"/></svg>
     </button>
     <div class="record-hint" id="recordHint">Hold to translate</div>
+    <div style="font-size:11px;color:#555;margin-top:8px;text-align:center;padding:0 20px;word-break:break-all" id="debugLog"></div>
   </div>
 
 </div>
@@ -229,6 +230,9 @@ const levelBar   = document.getElementById("levelBar");
 const origEl     = document.getElementById("originalText");
 const transEl    = document.getElementById("translatedText");
 
+const debugLog = document.getElementById("debugLog");
+function dbg(msg) { debugLog.textContent = msg; console.log(msg); }
+
 function showToast(msg, ms = 2500) {
   const t = document.getElementById("toast");
   t.textContent = msg; t.classList.add("show");
@@ -259,17 +263,19 @@ function connectWS(source, target) {
   ws.onopen = () => {
     ws.send(JSON.stringify({ source, target }));
     statusDot.classList.add("active");
+    dbg("Connected to server ✓");
   };
 
   ws.onmessage = (e) => {
     const data = JSON.parse(e.data);
-    if (data.error) { showToast("Error: " + data.error); return; }
+    if (data.error) { showToast("Error: " + data.error); dbg("Server error: " + data.error); return; }
+    dbg("Got result: " + data.translated);
     addPhrase(origEl,  data.original,   data.is_final);
     addPhrase(transEl, data.translated, data.is_final);
   };
 
-  ws.onclose = () => statusDot.classList.remove("active");
-  ws.onerror = (e) => { showToast("Connection error — check server"); statusDot.classList.remove("active"); };
+  ws.onclose = (e) => { statusDot.classList.remove("active"); dbg("WS closed: " + e.code + " " + e.reason); };
+  ws.onerror = (e) => { showToast("Connection error — check server"); dbg("WS error"); statusDot.classList.remove("active"); };
 }
 
 // Audio recording
@@ -281,6 +287,7 @@ async function startRecording() {
 
     // Connect WebSocket first
     connectWS(srcSel.value, tgtSel.value);
+    dbg("Connecting to server...");
 
     // Wait for WS to open
     await new Promise((resolve, reject) => {
