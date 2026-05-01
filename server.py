@@ -1,15 +1,25 @@
 """TransLive Mobile — FastAPI backend server."""
 
-import os
 import asyncio
-from pathlib import Path
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-import websockets
 import json
+import os
+from pathlib import Path
+
+import websockets
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+
+# Allow all origins for mobile access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DEEPGRAM_API_KEY = os.environ.get("DEEPGRAM_API_KEY", "")
 DEEPGRAM_URL = (
@@ -18,47 +28,61 @@ DEEPGRAM_URL = (
     "&punctuate=true&smart_format=true"
 )
 
-# Serve static files
-app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/")
 async def index():
-    return FileResponse(Path(__file__).parent / "static" / "index.html")
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/health")
+async def health():
+    return JSONResponse({"status": "ok", "api_key_set": bool(DEEPGRAM_API_KEY)})
 
 
 @app.websocket("/ws/transcribe")
 async def transcribe_ws(client_ws: WebSocket):
-    """Proxy audio from browser → Deepgram → translated text back to browser."""
     await client_ws.accept()
 
-    from deep_translator import GoogleTranslator
-    import unicodedata
+    if not DEEPGRAM_API_KEY:
+        await client_ws.send_json({"error": "DEEPGRAM_API_KEY not set on server"})
+        await client_ws.close()
+        return
 
-    # Read config message first
-    config_msg = await client_ws.receive_text()
-    config = json.loads(config_msg)
+    # Read config
+    try:
+        config_msg = await asyncio.wait_for(client_ws.receive_text(), timeout=10)
+        config = json.loads(config_msg)
+    except Exception:
+        config = {}
+
     source_lang = config.get("source", "auto")
     target_lang = config.get("target", "en")
 
     headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
 
     try:
-        async with websockets.connect(DEEPGRAM_URL, additional_headers=headers) as dg_ws:
+        async with websockets.connect(
+            DEEPGRAM_URL,
+            additional_headers=headers,
+            ping_interval=20,
+            ping_timeout=10,
+        ) as dg_ws:
 
-            async def receive_from_deepgram():
+            async def from_deepgram():
+                from deep_translator import GoogleTranslator
                 async for message in dg_ws:
                     try:
                         data = json.loads(message)
-                        msg_type = data.get("type", "")
-                        if msg_type in ("Metadata", "SpeechStarted"):
+                        if data.get("type") in ("Metadata", "SpeechStarted", "UtteranceEnd"):
                             continue
-                        text = data.get("channel", {}).get("alternatives", [{}])[0].get("transcript", "")
+                        text = (data.get("channel") or {}).get(
+                            "alternatives", [{}])[0].get("transcript", "")
                         is_final = data.get("is_final", False)
                         if not text.strip():
                             continue
-
-                        # Translate
                         try:
                             translated = await asyncio.get_event_loop().run_in_executor(
                                 None,
@@ -68,7 +92,6 @@ async def transcribe_ws(client_ws: WebSocket):
                             )
                         except Exception:
                             translated = text
-
                         await client_ws.send_json({
                             "original": text,
                             "translated": translated or text,
@@ -77,21 +100,15 @@ async def transcribe_ws(client_ws: WebSocket):
                     except Exception:
                         continue
 
-            async def receive_from_client():
+            async def from_client():
                 while True:
                     try:
                         data = await client_ws.receive_bytes()
                         await dg_ws.send(data)
-                    except WebSocketDisconnect:
-                        break
-                    except Exception:
+                    except (WebSocketDisconnect, Exception):
                         break
 
-            await asyncio.gather(
-                receive_from_deepgram(),
-                receive_from_client(),
-                return_exceptions=True,
-            )
+            await asyncio.gather(from_deepgram(), from_client(), return_exceptions=True)
 
     except Exception as e:
         try:
