@@ -8,346 +8,234 @@
   <meta name="theme-color" content="#0D0D12"/>
   <title>TransLive</title>
   <link rel="manifest" href="/static/manifest.json"/>
-  <link rel="apple-touch-icon" href="/static/icon.png"/>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
     :root {
-      --bg:       #0D0D12;
-      --card:     #16161E;
-      --elevated: #1E1E28;
-      --accent:   #7C6FFF;
-      --accent2:  #A78BFA;
-      --text:     #F0F0F8;
-      --subtext:  #8888A0;
-      --success:  #22C55E;
-      --error:    #EF4444;
-      --warning:  #F59E0B;
+      --bg: #0D0D12; --card: #16161E; --elevated: #1E1E28;
+      --accent: #7C6FFF; --accent2: #A78BFA; --text: #F0F0F8;
+      --subtext: #8888A0; --success: #22C55E; --error: #EF4444;
     }
-
-    html, body {
-      height: 100%; width: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      overflow: hidden;
-    }
-
-    .app {
-      display: flex; flex-direction: column;
-      height: 100dvh; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
-    }
-
-    /* ── Header ── */
-    .header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 8px;
-    }
-    .logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    html, body { height: 100%; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
+    .app { display: flex; flex-direction: column; height: 100dvh;
+      padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 8px; }
+    .logo { font-size: 22px; font-weight: 700; }
     .logo span { color: var(--accent); }
-    .status-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--subtext); transition: background 0.3s;
-    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--subtext); transition: background 0.3s; }
     .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
-
-    /* ── Language selector ── */
-    .lang-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 20px;
-    }
-    .lang-select {
-      flex: 1; background: var(--elevated); color: var(--text);
-      border: 1px solid #2A2A38; border-radius: 10px;
-      padding: 10px 12px; font-size: 14px; appearance: none;
-      -webkit-appearance: none; outline: none;
-    }
-    .swap-btn {
-      background: var(--elevated); border: 1px solid #2A2A38;
-      border-radius: 10px; padding: 10px 14px;
-      color: var(--accent); font-size: 18px; cursor: pointer;
-    }
-
-    /* ── Translation display ── */
-    .translation-area {
-      flex: 1; display: flex; flex-direction: column;
-      padding: 12px 20px; gap: 12px; overflow: hidden;
-    }
-
-    .text-card {
-      flex: 1; background: var(--card); border-radius: 16px;
-      padding: 16px; display: flex; flex-direction: column;
-      overflow: hidden; position: relative;
-    }
-    .text-card-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
-      text-transform: uppercase; color: var(--subtext); margin-bottom: 10px;
-    }
-    .text-content {
-      flex: 1; overflow-y: auto; font-size: 18px; line-height: 1.5;
-      color: var(--text);
-    }
+    .lang-row { display: flex; align-items: center; gap: 8px; padding: 8px 20px; }
+    .lang-select { flex: 1; background: var(--elevated); color: var(--text);
+      border: 1px solid #2A2A38; border-radius: 10px; padding: 10px 12px;
+      font-size: 14px; appearance: none; -webkit-appearance: none; outline: none; }
+    .swap-btn { background: var(--elevated); border: 1px solid #2A2A38;
+      border-radius: 10px; padding: 10px 14px; color: var(--accent); font-size: 18px; cursor: pointer; }
+    .translation-area { flex: 1; display: flex; flex-direction: column; padding: 12px 20px; gap: 12px; overflow: hidden; }
+    .text-card { flex: 1; background: var(--card); border-radius: 16px; padding: 16px;
+      display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    .text-card-label { font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--subtext); margin-bottom: 10px; }
+    .text-content { flex: 1; overflow-y: auto; font-size: 18px; line-height: 1.5; color: var(--text); }
     .text-content.original { font-size: 15px; color: var(--subtext); }
     .text-content .phrase { margin-bottom: 8px; }
     .text-content .phrase.interim { opacity: 0.6; font-style: italic; }
-    .text-content .phrase.final { opacity: 1; }
-
-    .clear-btn {
-      position: absolute; top: 12px; right: 12px;
-      background: var(--elevated); border: none; border-radius: 6px;
-      color: var(--subtext); font-size: 11px; padding: 4px 8px;
-      cursor: pointer;
-    }
-
-    /* ── Record button ── */
-    .record-area {
-      padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
-      display: flex; flex-direction: column; align-items: center; gap: 12px;
-    }
-
-    .record-btn {
-      width: 80px; height: 80px; border-radius: 50%;
-      background: var(--accent); border: none;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: transform 0.15s, background 0.15s;
-      box-shadow: 0 4px 24px rgba(124, 111, 255, 0.4);
-      -webkit-user-select: none; user-select: none;
-    }
-    .record-btn:active, .record-btn.recording {
-      transform: scale(0.93);
-      background: #EF4444;
-      box-shadow: 0 4px 24px rgba(239, 68, 68, 0.5);
-    }
+    .clear-btn { position: absolute; top: 12px; right: 12px; background: var(--elevated);
+      border: none; border-radius: 6px; color: var(--subtext); font-size: 11px; padding: 4px 8px; cursor: pointer; }
+    .record-area { padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .record-btn { width: 80px; height: 80px; border-radius: 50%; background: var(--accent); border: none;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+      box-shadow: 0 4px 24px rgba(124,111,255,0.4); -webkit-user-select: none; user-select: none; }
+    .record-btn.recording { transform: scale(0.93); background: #EF4444; box-shadow: 0 4px 24px rgba(239,68,68,0.5); }
     .record-btn svg { width: 32px; height: 32px; fill: white; }
-
-    .record-hint {
-      font-size: 13px; color: var(--subtext); text-align: center;
-    }
-
-    /* ── Audio level bar ── */
-    .level-bar-wrap {
-      width: 100%; height: 4px; background: var(--elevated);
-      border-radius: 2px; overflow: hidden;
-    }
-    .level-bar {
-      height: 100%; width: 0%; background: var(--accent);
-      border-radius: 2px; transition: width 0.1s;
-    }
-
-    /* ── Toast ── */
-    .toast {
-      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-      background: var(--card); color: var(--text); padding: 10px 20px;
-      border-radius: 20px; font-size: 13px; opacity: 0;
-      transition: opacity 0.3s; pointer-events: none; white-space: nowrap;
-      border: 1px solid #2A2A38;
-    }
+    .record-hint { font-size: 13px; color: var(--subtext); text-align: center; }
+    .level-bar-wrap { width: 100%; height: 4px; background: var(--elevated); border-radius: 2px; overflow: hidden; }
+    .level-bar { height: 100%; width: 0%; background: var(--accent); border-radius: 2px; transition: width 0.1s; }
+    .debug { font-size: 11px; color: #444; text-align: center; padding: 0 20px; word-break: break-all; min-height: 16px; }
+    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: var(--card); color: var(--text); padding: 10px 20px; border-radius: 20px;
+      font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+      white-space: nowrap; border: 1px solid #2A2A38; }
     .toast.show { opacity: 1; }
   </style>
 </head>
 <body>
 <div class="app">
-
-  <!-- Header -->
   <div class="header">
     <div class="logo">Trans<span>Live</span></div>
-    <div class="status-dot" id="statusDot"></div>
+    <div class="status-dot" id="dot"></div>
   </div>
-
-  <!-- Language row -->
   <div class="lang-row">
-    <select class="lang-select" id="sourceLang">
-      <option value="auto">Auto Detect</option>
-    </select>
-    <button class="swap-btn" id="swapBtn">⇄</button>
-    <select class="lang-select" id="targetLang"></select>
+    <select class="lang-select" id="src"></select>
+    <button class="swap-btn" id="swap">⇄</button>
+    <select class="lang-select" id="tgt"></select>
   </div>
-
-  <!-- Translation display -->
   <div class="translation-area">
     <div class="text-card">
       <div class="text-card-label">Original</div>
       <button class="clear-btn" onclick="clearAll()">Clear</button>
-      <div class="text-content original" id="originalText"></div>
+      <div class="text-content original" id="orig"></div>
     </div>
     <div class="text-card">
       <div class="text-card-label">Translated</div>
-      <div class="text-content" id="translatedText"></div>
+      <div class="text-content" id="trans"></div>
     </div>
   </div>
-
-  <!-- Record button -->
   <div class="record-area">
-    <div class="level-bar-wrap">
-      <div class="level-bar" id="levelBar"></div>
-    </div>
-    <button class="record-btn" id="recordBtn">
+    <div class="level-bar-wrap"><div class="level-bar" id="lvl"></div></div>
+    <button class="record-btn" id="btn">
       <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1 17.93V21H9v2h6v-2h-2v-2.07A8 8 0 0 0 20 11h-2a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.93z"/></svg>
     </button>
-    <div class="record-hint" id="recordHint">Hold to translate</div>
-    <div style="font-size:11px;color:#555;margin-top:8px;text-align:center;padding:0 20px;word-break:break-all" id="debugLog"></div>
+    <div class="record-hint" id="hint">Tap to translate</div>
+    <div class="debug" id="dbg"></div>
   </div>
-
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-const LANGUAGES = {
-  "Auto Detect": "auto", "English": "en", "Chinese (Simplified)": "zh-CN",
-  "Chinese (Traditional)": "zh-TW", "Spanish": "es", "French": "fr",
-  "German": "de", "Japanese": "ja", "Korean": "ko", "Portuguese": "pt",
-  "Russian": "ru", "Arabic": "ar", "Italian": "it", "Dutch": "nl",
-  "Polish": "pl", "Turkish": "tr", "Vietnamese": "vi", "Thai": "th",
-  "Indonesian": "id", "Hindi": "hi", "Swedish": "sv", "Norwegian": "no",
-  "Danish": "da", "Finnish": "fi"
+const LANGS = {
+  "Auto Detect":"auto","English":"en","Chinese (Simplified)":"zh-CN",
+  "Chinese (Traditional)":"zh-TW","Spanish":"es","French":"fr","German":"de",
+  "Japanese":"ja","Korean":"ko","Portuguese":"pt","Russian":"ru","Arabic":"ar",
+  "Italian":"it","Dutch":"nl","Polish":"pl","Turkish":"tr","Vietnamese":"vi",
+  "Thai":"th","Indonesian":"id","Hindi":"hi","Swedish":"sv","Norwegian":"no",
+  "Danish":"da","Finnish":"fi"
 };
 
-// Populate language dropdowns
-const srcSel = document.getElementById("sourceLang");
-const tgtSel = document.getElementById("targetLang");
-
-Object.entries(LANGUAGES).forEach(([name, code]) => {
-  srcSel.add(new Option(name, code));
-  if (code !== "auto") tgtSel.add(new Option(name, code));
+const srcSel = document.getElementById("src");
+const tgtSel = document.getElementById("tgt");
+Object.entries(LANGS).forEach(([n,c]) => {
+  srcSel.add(new Option(n,c));
+  if (c !== "auto") tgtSel.add(new Option(n,c));
 });
 tgtSel.value = "en";
 
-// Swap languages
-document.getElementById("swapBtn").onclick = () => {
+document.getElementById("swap").onclick = () => {
   const s = srcSel.value, t = tgtSel.value;
   if (s !== "auto") { srcSel.value = t; tgtSel.value = s; }
 };
 
-// State
-let ws = null, mediaRecorder = null, audioCtx = null, analyser = null;
-let recording = false, levelTimer = null;
+const btn  = document.getElementById("btn");
+const hint = document.getElementById("hint");
+const dot  = document.getElementById("dot");
+const lvl  = document.getElementById("lvl");
+const orig = document.getElementById("orig");
+const trans= document.getElementById("trans");
+const dbgEl= document.getElementById("dbg");
 
-const recordBtn  = document.getElementById("recordBtn");
-const recordHint = document.getElementById("recordHint");
-const statusDot  = document.getElementById("statusDot");
-const levelBar   = document.getElementById("levelBar");
-const origEl     = document.getElementById("originalText");
-const transEl    = document.getElementById("translatedText");
+let ws=null, actx=null, processor=null, stream=null, lvlTimer=null, active=false;
 
-const debugLog = document.getElementById("debugLog");
-function dbg(msg) { debugLog.textContent = msg; console.log(msg); }
-
-function showToast(msg, ms = 2500) {
+function dbg(m) { dbgEl.textContent = m; }
+function toast(m) {
   const t = document.getElementById("toast");
-  t.textContent = msg; t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), ms);
+  t.textContent = m; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3000);
 }
-
-function clearAll() {
-  origEl.innerHTML = ""; transEl.innerHTML = "";
-}
-
-function addPhrase(el, text, isFinal) {
-  // Remove last interim if exists
-  const last = el.querySelector(".phrase.interim");
+function clearAll() { orig.innerHTML = ""; trans.innerHTML = ""; }
+function addLine(el, text, fin) {
+  const last = el.querySelector(".interim");
   if (last) last.remove();
-  const div = document.createElement("div");
-  div.className = "phrase " + (isFinal ? "final" : "interim");
-  div.textContent = text;
-  el.appendChild(div);
+  const d = document.createElement("div");
+  d.className = "phrase " + (fin ? "final" : "interim");
+  d.textContent = text;
+  el.appendChild(d);
   el.scrollTop = el.scrollHeight;
 }
 
-// WebSocket connection
-function connectWS(source, target) {
+async function toggle() {
+  if (active) { stop(); } else { await start(); }
+}
+
+async function start() {
+  dbg("Requesting mic...");
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch(e) {
+    toast("Mic denied: " + e.message); dbg("Mic error"); return;
+  }
+
+  // Create AudioContext immediately after user gesture
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === "suspended") await actx.resume();
+  dbg("AudioContext: " + actx.state + " @ " + actx.sampleRate + "Hz");
+
+  // Open WebSocket
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  ws = new WebSocket(`${proto}://${location.host}/ws/transcribe`);
+  const url = `${proto}://${location.host}/ws/transcribe`;
+  dbg("Connecting WS...");
+  ws = new WebSocket(url);
   ws.binaryType = "arraybuffer";
 
   ws.onopen = () => {
-    ws.send(JSON.stringify({ source, target }));
-    statusDot.classList.add("active");
-    dbg("Connected to server ✓");
+    ws.send(JSON.stringify({ source: srcSel.value, target: tgtSel.value }));
+    dot.classList.add("active");
+    dbg("WS open — speak now");
+    startAudio();
   };
-
   ws.onmessage = (e) => {
-    const data = JSON.parse(e.data);
-    if (data.error) { showToast("Error: " + data.error); dbg("Server error: " + data.error); return; }
-    dbg("Got result: " + data.translated);
-    addPhrase(origEl,  data.original,   data.is_final);
-    addPhrase(transEl, data.translated, data.is_final);
+    const d = JSON.parse(e.data);
+    if (d.error) { toast(d.error); dbg("Err: "+d.error); return; }
+    dbg("✓ " + d.translated);
+    addLine(orig,  d.original,   d.is_final);
+    addLine(trans, d.translated, d.is_final);
   };
+  ws.onclose = (e) => { dot.classList.remove("active"); dbg("WS closed " + e.code); };
+  ws.onerror = ()  => { toast("Connection error"); dbg("WS error"); stop(); };
 
-  ws.onclose = (e) => { statusDot.classList.remove("active"); dbg("WS closed: " + e.code + " " + e.reason); };
-  ws.onerror = (e) => { showToast("Connection error — check server"); dbg("WS error"); statusDot.classList.remove("active"); };
+  active = true;
+  btn.classList.add("recording");
+  hint.textContent = "Tap to stop";
 }
 
-// Audio recording
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: {
-      sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true
-    }});
+function startAudio() {
+  const src = actx.createMediaStreamSource(stream);
 
-    // Connect WebSocket first
-    connectWS(srcSel.value, tgtSel.value);
-    dbg("Connecting to server...");
+  // Level meter
+  const analyser = actx.createAnalyser();
+  analyser.fftSize = 256;
+  src.connect(analyser);
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  lvlTimer = setInterval(() => {
+    analyser.getByteFrequencyData(buf);
+    const avg = buf.reduce((a,b)=>a+b,0)/buf.length;
+    lvl.style.width = Math.min(100, avg*2) + "%";
+  }, 80);
 
-    // Wait for WS to open
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("Connection timeout")), 5000);
-      ws.addEventListener("open", () => { clearTimeout(timeout); resolve(); }, { once: true });
-      ws.addEventListener("error", () => { clearTimeout(timeout); reject(new Error("WebSocket error")); }, { once: true });
-    });
-
-    // Level meter
-    audioCtx  = new AudioContext({ sampleRate: 16000 });
-    analyser  = audioCtx.createAnalyser();
-    const src = audioCtx.createMediaStreamSource(stream);
-    src.connect(analyser);
-    analyser.fftSize = 256;
-    const buf = new Uint8Array(analyser.frequencyBinCount);
-    levelTimer = setInterval(() => {
-      analyser.getByteFrequencyData(buf);
-      const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
-      levelBar.style.width = Math.min(100, avg * 2) + "%";
-    }, 80);
-
-    // Stream audio as PCM via ScriptProcessor
-    const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-    src.connect(processor);
-    processor.connect(audioCtx.destination);
-    processor.onaudioprocess = (e) => {
-      if (!recording || ws?.readyState !== WebSocket.OPEN) return;
-      const f32 = e.inputBuffer.getChannelData(0);
-      const i16 = new Int16Array(f32.length);
-      for (let i = 0; i < f32.length; i++) i16[i] = Math.max(-32768, Math.min(32767, f32[i] * 32768));
-      ws.send(i16.buffer);
-    };
-
-    recording = true;
-    recordBtn.classList.add("recording");
-    recordHint.textContent = "Listening…";
-
-  } catch (err) {
-    showToast("Error: " + err.message);
-    stopRecording();
-  }
+  // PCM processor — downsample to 16kHz
+  processor = actx.createScriptProcessor(4096, 1, 1);
+  src.connect(processor);
+  processor.connect(actx.destination);
+  processor.onaudioprocess = (e) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const input = e.inputBuffer.getChannelData(0);
+    const ratio = actx.sampleRate / 16000;
+    const outLen = Math.floor(input.length / ratio);
+    const i16 = new Int16Array(outLen);
+    for (let i = 0; i < outLen; i++) {
+      const s = input[Math.floor(i * ratio)];
+      i16[i] = Math.max(-32768, Math.min(32767, s * 32768));
+    }
+    ws.send(i16.buffer);
+  };
 }
 
-function stopRecording() {
-  recording = false;
-  recordBtn.classList.remove("recording");
-  recordHint.textContent = "Hold to translate";
-  levelBar.style.width = "0%";
-  clearInterval(levelTimer);
-  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+function stop() {
+  active = false;
+  clearInterval(lvlTimer);
+  lvl.style.width = "0%";
+  if (processor) { processor.disconnect(); processor = null; }
+  if (actx) { actx.close(); actx = null; }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   if (ws) { ws.close(); ws = null; }
-  statusDot.classList.remove("active");
+  dot.classList.remove("active");
+  btn.classList.remove("recording");
+  hint.textContent = "Tap to translate";
+  dbg("Stopped");
 }
 
-// Touch / mouse events
-recordBtn.addEventListener("touchstart", e => { e.preventDefault(); startRecording(); }, { passive: false });
-recordBtn.addEventListener("touchend",   e => { e.preventDefault(); stopRecording(); },  { passive: false });
-recordBtn.addEventListener("mousedown",  () => startRecording());
-recordBtn.addEventListener("mouseup",    () => stopRecording());
-recordBtn.addEventListener("mouseleave", () => { if (recording) stopRecording(); });
+// Use tap (not hold) — more reliable on iOS
+btn.addEventListener("click", toggle);
 </script>
 </body>
 </html>
