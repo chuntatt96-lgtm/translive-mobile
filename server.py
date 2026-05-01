@@ -64,12 +64,14 @@ async def transcribe_ws(client_ws: WebSocket):
     headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
 
     try:
+        print(f"Connecting to Deepgram with key: {DEEPGRAM_API_KEY[:8]}...")
         async with websockets.connect(
             DEEPGRAM_URL,
             additional_headers=headers,
             ping_interval=20,
             ping_timeout=10,
         ) as dg_ws:
+            print("Connected to Deepgram successfully")
 
             async def from_deepgram():
                 from deep_translator import GoogleTranslator
@@ -111,7 +113,8 @@ async def transcribe_ws(client_ws: WebSocket):
             await asyncio.gather(from_deepgram(), from_client(), return_exceptions=True)
 
     except Exception as e:
+        print(f"Deepgram connection error: {type(e).__name__}: {e}")
         try:
-            await client_ws.send_json({"error": str(e)})
+            await client_ws.send_json({"error": f"{type(e).__name__}: {str(e)}"})
         except Exception:
             pass
