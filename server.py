@@ -12,6 +12,15 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
+# Test imports on startup
+@app.on_event("startup")
+async def startup():
+    try:
+        import aiohttp
+        print(f"aiohttp version: {aiohttp.__version__}")
+    except ImportError as e:
+        print(f"MISSING PACKAGE: {e}")
+
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
