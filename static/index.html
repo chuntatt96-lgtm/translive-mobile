@@ -160,15 +160,14 @@ async function start() {
   if (actx.state === "suspended") await actx.resume();
   dbg("AudioContext: " + actx.state + " @ " + actx.sampleRate + "Hz");
 
-  // Open WebSocket
+  // Open WebSocket with language params in URL
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  const url = `${proto}://${location.host}/ws/transcribe`;
+  const url = `${proto}://${location.host}/ws/transcribe?source=${srcSel.value}&target=${tgtSel.value}`;
   dbg("Connecting WS...");
   ws = new WebSocket(url);
   ws.binaryType = "arraybuffer";
 
   ws.onopen = () => {
-    ws.send(JSON.stringify({ source: srcSel.value, target: tgtSel.value }));
     dot.classList.add("active");
     dbg("WS open — speak now");
     startAudio();

@@ -51,15 +51,10 @@ async def transcribe_ws(client_ws: WebSocket):
         await client_ws.close()
         return
 
-    # Read config
-    try:
-        config_msg = await asyncio.wait_for(client_ws.receive_text(), timeout=10)
-        config = json.loads(config_msg)
-    except Exception:
-        config = {}
-
-    source_lang = config.get("source", "auto")
-    target_lang = config.get("target", "en")
+    # Get language params from query string (more reliable than waiting for message)
+    source_lang = client_ws.query_params.get("source", "auto")
+    target_lang = client_ws.query_params.get("target", "en")
+    print(f"Session: {source_lang} → {target_lang}")
 
     headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
 
